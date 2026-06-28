@@ -7,6 +7,18 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Revocation Modal State
+  const [revokingUserId, setRevokingUserId] = useState(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [revokeOtherReason, setRevokeOtherReason] = useState('');
+
+  const PREDEFINED_REVOKE_REASONS = [
+    'Maintenance dues not cleared',
+    'Not a verified resident of the society',
+    'Violation of turf rules',
+    'Other'
+  ];
+
   useEffect(() => {
     const q = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -24,20 +36,26 @@ export default function UsersPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleUpdateStatus = async (userId, newStatus) => {
+  const handleUpdateStatus = async (userId, newStatus, reason = null) => {
     try {
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
-        status: newStatus
-      });
+      const updateData = { status: newStatus };
+      if (reason && newStatus === 'rejected') {
+        updateData.revocationReason = reason;
+      }
+      await updateDoc(userRef, updateData);
 
       // Send Push Notification
       const user = users.find(u => u.id === userId);
       if (user && user.fcmToken) {
-        const title = newStatus === 'active' ? 'Account Approved!' : 'Account Update';
-        const body = newStatus === 'active' 
+        const title = newStatus === 'active' ? 'Account Approved!' : 'Access Revoked';
+        let body = newStatus === 'active' 
           ? 'Your Lake Town Turf account has been approved. You can now book slots!'
           : 'Your account access has been revoked/rejected.';
+        
+        if (reason && newStatus === 'rejected') {
+          body += ` Reason: ${reason}`;
+        }
           
         fetch('/.netlify/functions/notify', {
           method: 'POST',
@@ -111,7 +129,11 @@ export default function UsersPage() {
                         <CheckCircle size={20} />
                       </button>
                       <button
-                        onClick={() => handleUpdateStatus(user.id, 'rejected')}
+                        onClick={() => {
+                          setRevokingUserId(user.id);
+                          setRevokeReason(PREDEFINED_REVOKE_REASONS[0]);
+                          setRevokeOtherReason('');
+                        }}
                         className="p-2 text-dangerRed hover:bg-dangerRed/10 rounded-lg transition-colors"
                         title="Reject"
                       >
@@ -121,7 +143,11 @@ export default function UsersPage() {
                   )}
                   {statusStr === 'active' && (
                     <button
-                      onClick={() => handleUpdateStatus(user.id, 'rejected')}
+                      onClick={() => {
+                        setRevokingUserId(user.id);
+                        setRevokeReason(PREDEFINED_REVOKE_REASONS[0]);
+                        setRevokeOtherReason('');
+                      }}
                       className="text-sm text-dangerRed hover:underline"
                     >
                       Revoke Access
@@ -149,6 +175,71 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Revocation Modal */}
+      {revokingUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-darkNavySurface border border-cardBorder rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-textPrimary mb-2 flex items-center">
+              <XCircle className="text-dangerRed mr-2" size={24} />
+              Revoke User Access
+            </h3>
+            <p className="text-textSecondary text-sm mb-4">
+              Please provide a reason for rejecting or revoking this user. This will be shown to them in the app.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textSecondary mb-1">Reason</label>
+                <select
+                  value={revokeReason}
+                  onChange={(e) => setRevokeReason(e.target.value)}
+                  className="w-full bg-darkNavy border border-cardBorder rounded-lg p-2.5 text-textPrimary focus:outline-none focus:border-dangerRed transition-colors"
+                >
+                  {PREDEFINED_REVOKE_REASONS.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              {revokeReason === 'Other' && (
+                <div>
+                  <label className="block text-sm font-medium text-textSecondary mb-1">Specific Reason</label>
+                  <textarea
+                    value={revokeOtherReason}
+                    onChange={(e) => setRevokeOtherReason(e.target.value)}
+                    placeholder="Enter the specific reason for revocation..."
+                    className="w-full bg-darkNavy border border-cardBorder rounded-lg p-2.5 text-textPrimary focus:outline-none focus:border-dangerRed transition-colors min-h-[80px] resize-y"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setRevokingUserId(null)}
+                className="px-4 py-2 text-textSecondary hover:text-textPrimary transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => {
+                  const finalReason = revokeReason === 'Other' ? revokeOtherReason.trim() : revokeReason;
+                  if (revokeReason === 'Other' && !finalReason) {
+                    alert("Please enter a specific reason.");
+                    return;
+                  }
+                  handleUpdateStatus(revokingUserId, 'rejected', finalReason);
+                  setRevokingUserId(null);
+                }}
+                className="px-4 py-2 bg-dangerRed text-white font-bold rounded hover:bg-opacity-90 transition-colors"
+              >
+                Revoke Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
