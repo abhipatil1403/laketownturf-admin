@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
@@ -79,10 +79,24 @@ export default function BookingsPage() {
         updateData.cancellationReason = reason;
       }
       
-      await updateDoc(doc(db, 'bookings', bookingId), updateData);
+      const booking = bookings.find(b => b.id === bookingId);
+
+      if (newStatus === 'cancelled' && bookingId.startsWith('booking_')) {
+        // Copy to a new auto-ID document to free up the "lock" document for the slot
+        const cancelledRef = doc(collection(db, 'bookings'));
+        if (booking) {
+          const { id, ...dataToSave } = booking;
+          await setDoc(cancelledRef, {
+            ...dataToSave,
+            ...updateData
+          });
+        }
+        await deleteDoc(doc(db, 'bookings', bookingId));
+      } else {
+        await updateDoc(doc(db, 'bookings', bookingId), updateData);
+      }
       
       // Send Push Notification
-      const booking = bookings.find(b => b.id === bookingId);
       if (booking) {
         const user = usersMap[booking.uid];
         if (user && user.fcmToken) {
