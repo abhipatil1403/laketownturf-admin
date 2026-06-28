@@ -9,6 +9,7 @@ import AdminLayout from './components/AdminLayout';
 import UsersPage from './pages/UsersPage';
 import SlotsPage from './pages/SlotsPage';
 import BookingsPage from './pages/BookingsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -69,6 +70,7 @@ function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="slots" element={<SlotsPage />} />
           <Route path="bookings" element={<BookingsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

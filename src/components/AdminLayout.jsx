@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Users, Calendar, Clock, LogOut, Shield } from 'lucide-react';
+import { Users, Calendar, Clock, LogOut, Shield, Settings } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -16,6 +16,7 @@ export default function AdminLayout() {
     { name: 'Users', path: '/users', icon: <Users size={20} /> },
     { name: 'Slots', path: '/slots', icon: <Clock size={20} /> },
     { name: 'Bookings', path: '/bookings', icon: <Calendar size={20} /> },
+    { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 
   return (
