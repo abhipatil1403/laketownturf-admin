@@ -93,7 +93,12 @@ export default function SlotsPage() {
       const bookingsQ = query(collection(db, 'bookings'), where('date', '==', dateStr));
       const bookingsSnap = await getDocs(bookingsQ);
       const bookings = {};
-      bookingsSnap.forEach(doc => bookings[doc.data().slotId] = doc.data());
+      bookingsSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.status !== 'cancelled') {
+          bookings[data.slotId] = data;
+        }
+      });
 
       // 4. Merge
       const finalSlots = virtualSlots.map(vSlot => {
