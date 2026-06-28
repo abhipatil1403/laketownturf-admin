@@ -1,19 +1,18 @@
-const firebaseAdminModule = require('firebase-admin');
-const admin = firebaseAdminModule.default || firebaseAdminModule;
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 
 // Initialize Firebase Admin SDK once
-const apps = admin.apps || [];
-if (apps.length === 0) {
+if (getApps().length === 0) {
   const envVar = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (envVar) {
     try {
       const serviceAccount = JSON.parse(envVar);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+      initializeApp({
+        credential: cert(serviceAccount)
       });
       console.log('Firebase Admin initialized successfully.');
     } catch (err) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', err.message);
+      console.error('Failed to initialize Firebase Admin:', err.message);
     }
   } else {
     console.warn('FIREBASE_SERVICE_ACCOUNT env variable is not set.');
@@ -42,9 +41,8 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'FCM token is required' }) };
     }
 
-    const currentApps = admin.apps || [];
-    if (currentApps.length === 0) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Firebase Admin not initialized. Check FIREBASE_SERVICE_ACCOUNT env variable.' }) };
+    if (getApps().length === 0) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Firebase Admin not initialized.' }) };
     }
 
     const message = {
@@ -56,7 +54,7 @@ exports.handler = async (event) => {
     };
     if (data) message.data = data;
 
-    const response = await admin.messaging().send(message);
+    const response = await getMessaging().send(message);
 
     return {
       statusCode: 200,
