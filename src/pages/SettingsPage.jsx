@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Settings, Save, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,6 +16,8 @@ export default function SettingsPage() {
     maintenanceStartDate: '',
     maintenanceEndDate: ''
   });
+  
+  const [initialSettings, setInitialSettings] = useState(null);
 
   useEffect(() => {
     fetchSettings();
@@ -35,6 +37,14 @@ export default function SettingsPage() {
           maintenanceStartDate: data.maintenanceStartDate || '',
           maintenanceEndDate: data.maintenanceEndDate || ''
         });
+        setInitialSettings({
+          maintenanceMode: data.maintenanceMode || false,
+          maintenanceMessage: data.maintenanceMessage || '',
+          maintenanceStartDate: data.maintenanceStartDate || '',
+          maintenanceEndDate: data.maintenanceEndDate || ''
+        });
+      } else {
+        setInitialSettings({ ...settings });
       }
     } catch (err) {
       console.error(err);
@@ -51,6 +61,35 @@ export default function SettingsPage() {
     try {
       const docRef = doc(db, 'settings', 'general');
       await setDoc(docRef, settings, { merge: true });
+      
+      // If maintenance mode toggled, send notification
+      if (initialSettings && initialSettings.maintenanceMode !== settings.maintenanceMode) {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const tokens = [];
+        usersSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.fcmToken) tokens.push(data.fcmToken);
+        });
+
+        if (tokens.length > 0) {
+          const title = settings.maintenanceMode ? 'Maintenance Mode Active' : 'Maintenance Mode Disabled';
+          const body = settings.maintenanceMode 
+              ? (settings.maintenanceMessage || 'Turf bookings are temporarily paused. Open the app for details.') 
+              : 'Turf bookings are now open again!';
+              
+          // Send in chunks of 500
+          for (let i = 0; i < tokens.length; i += 500) {
+             const chunk = tokens.slice(i, i + 500);
+             fetch('/.netlify/functions/notify', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ tokens: chunk, title, body })
+             }).catch(console.error);
+          }
+        }
+      }
+      
+      setInitialSettings({ ...settings });
       setSuccess('Settings saved successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {

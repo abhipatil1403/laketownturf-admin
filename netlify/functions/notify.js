@@ -35,32 +35,51 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { token, title, body, data } = JSON.parse(event.body);
+    const { token, tokens, title, body, data } = JSON.parse(event.body);
 
-    if (!token) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'FCM token is required' }) };
+    if (!token && (!tokens || tokens.length === 0)) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'FCM token(s) required' }) };
     }
 
     if (getApps().length === 0) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'Firebase Admin not initialized.' }) };
     }
 
-    const message = {
-      notification: {
-        title: title || 'Notification',
-        body: body || '',
-      },
-      token: token,
-    };
-    if (data) message.data = data;
+    if (tokens && tokens.length > 0) {
+      const message = {
+        notification: {
+          title: title || 'Notification',
+          body: body || '',
+        },
+        tokens: tokens,
+      };
+      if (data) message.data = data;
 
-    const response = await getMessaging().send(message);
+      const response = await getMessaging().sendEachForMulticast(message);
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true, response }),
-    };
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, response }),
+      };
+    } else {
+      const message = {
+        notification: {
+          title: title || 'Notification',
+          body: body || '',
+        },
+        token: token,
+      };
+      if (data) message.data = data;
+
+      const response = await getMessaging().send(message);
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, response }),
+      };
+    }
   } catch (error) {
     console.error('Error sending notification:', error);
     return {
