@@ -127,6 +127,14 @@ export default function UsersPage() {
                       Revoke Access
                     </button>
                   )}
+                  {statusStr === 'rejected' && (
+                    <button
+                      onClick={() => handleUpdateStatus(user.id, 'active')}
+                      className="text-sm text-primaryGreen hover:underline"
+                    >
+                      Grant Access
+                    </button>
+                  )}
                 </td>
               </tr>
             )})}

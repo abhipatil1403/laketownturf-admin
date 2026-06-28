@@ -13,6 +13,18 @@ export default function BookingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedBookingId, setExpandedBookingId] = useState(null);
 
+  // Cancellation Modal State
+  const [cancellingBookingId, setCancellingBookingId] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelOtherReason, setCancelOtherReason] = useState('');
+
+  const PREDEFINED_REASONS = [
+    'Maintenance dues not cleared',
+    'Not a verified resident of the society',
+    'Turf under maintenance / Slot unavailable',
+    'Other'
+  ];
+
   const formatTime12hr = (time24) => {
     try {
       const [h, m] = time24.split(':');
@@ -60,11 +72,14 @@ export default function BookingsPage() {
     }
   };
 
-  const updateBookingStatus = async (bookingId, newStatus) => {
+  const updateBookingStatus = async (bookingId, newStatus, reason = null) => {
     try {
-      await updateDoc(doc(db, 'bookings', bookingId), {
-        status: newStatus
-      });
+      const updateData = { status: newStatus };
+      if (reason) {
+        updateData.cancellationReason = reason;
+      }
+      
+      await updateDoc(doc(db, 'bookings', bookingId), updateData);
       
       // Send Push Notification
       const booking = bookings.find(b => b.id === bookingId);
@@ -80,6 +95,9 @@ export default function BookingsPage() {
           } else if (newStatus === 'cancelled') {
             title = 'Booking Cancelled';
             body = `Your turf booking on ${format(parseISO(booking.date), 'dd-MM-yyyy')} was cancelled by the admin.`;
+            if (reason) {
+              body += ` Reason: ${reason}`;
+            }
           }
           
           fetch('/.netlify/functions/notify', {
@@ -320,7 +338,9 @@ export default function BookingsPage() {
                               <div className="mt-8 pt-4 border-t border-cardBorder flex justify-end space-x-4">
                                 <button
                                   onClick={() => {
-                                    if(window.confirm("Reject and cancel this booking?")) updateBookingStatus(booking.id, 'cancelled');
+                                    setCancellingBookingId(booking.id);
+                                    setCancelReason(PREDEFINED_REASONS[0]);
+                                    setCancelOtherReason('');
                                   }}
                                   className="flex items-center px-4 py-2 bg-darkNavy border border-dangerRed text-dangerRed rounded hover:bg-dangerRed hover:text-white transition-colors"
                                 >
@@ -343,7 +363,9 @@ export default function BookingsPage() {
                               <div className="mt-8 pt-4 border-t border-cardBorder flex justify-end">
                                 <button
                                   onClick={() => {
-                                    if(window.confirm("Are you sure you want to cancel this approved booking?")) updateBookingStatus(booking.id, 'cancelled');
+                                    setCancellingBookingId(booking.id);
+                                    setCancelReason(PREDEFINED_REASONS[0]);
+                                    setCancelOtherReason('');
                                   }}
                                   className="text-sm text-dangerRed hover:underline font-medium transition-colors"
                                 >
@@ -362,6 +384,71 @@ export default function BookingsPage() {
           </table>
         </div>
       </div>
+
+      {/* Cancellation Modal */}
+      {cancellingBookingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-darkNavySurface border border-cardBorder rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-textPrimary mb-2 flex items-center">
+              <AlertTriangle className="text-dangerRed mr-2" size={24} />
+              Cancel Booking
+            </h3>
+            <p className="text-textSecondary text-sm mb-4">
+              Please provide a reason for cancelling this booking. This will be sent to the user.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textSecondary mb-1">Reason</label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full bg-darkNavy border border-cardBorder rounded-lg p-2.5 text-textPrimary focus:outline-none focus:border-dangerRed transition-colors"
+                >
+                  {PREDEFINED_REASONS.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              {cancelReason === 'Other' && (
+                <div>
+                  <label className="block text-sm font-medium text-textSecondary mb-1">Specific Reason</label>
+                  <textarea
+                    value={cancelOtherReason}
+                    onChange={(e) => setCancelOtherReason(e.target.value)}
+                    placeholder="Enter the specific reason for denial..."
+                    className="w-full bg-darkNavy border border-cardBorder rounded-lg p-2.5 text-textPrimary focus:outline-none focus:border-dangerRed transition-colors min-h-[80px] resize-y"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setCancellingBookingId(null)}
+                className="px-4 py-2 text-textSecondary hover:text-textPrimary transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => {
+                  const finalReason = cancelReason === 'Other' ? cancelOtherReason.trim() : cancelReason;
+                  if (cancelReason === 'Other' && !finalReason) {
+                    alert("Please enter a specific reason.");
+                    return;
+                  }
+                  updateBookingStatus(cancellingBookingId, 'cancelled', finalReason);
+                  setCancellingBookingId(null);
+                }}
+                className="px-4 py-2 bg-dangerRed text-white font-bold rounded hover:bg-opacity-90 transition-colors"
+              >
+                Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
