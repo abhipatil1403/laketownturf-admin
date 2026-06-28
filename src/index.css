@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-darkNavy text-textPrimary antialiased selection:bg-primaryGreen selection:text-darkNavy;
+  }
+}
