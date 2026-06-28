@@ -1,7 +1,7 @@
 [build]
-  command = "npm install --prefix netlify/functions && npm run build"
+  command = "npm run build"
   publish = "dist"
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "none"
+  external_node_modules = ["firebase-admin"]
