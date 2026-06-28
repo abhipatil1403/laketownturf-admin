@@ -1,7 +1,9 @@
-const admin = require('firebase-admin');
+const firebaseAdminModule = require('firebase-admin');
+const admin = firebaseAdminModule.default || firebaseAdminModule;
 
 // Initialize Firebase Admin SDK once
-if (!admin.apps.length) {
+const apps = admin.apps || [];
+if (apps.length === 0) {
   const envVar = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (envVar) {
     try {
@@ -9,6 +11,7 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
+      console.log('Firebase Admin initialized successfully.');
     } catch (err) {
       console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', err.message);
     }
@@ -24,7 +27,6 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
-  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }
@@ -40,7 +42,8 @@ exports.handler = async (event) => {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'FCM token is required' }) };
     }
 
-    if (!admin.apps.length) {
+    const currentApps = admin.apps || [];
+    if (currentApps.length === 0) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'Firebase Admin not initialized. Check FIREBASE_SERVICE_ACCOUNT env variable.' }) };
     }
 
