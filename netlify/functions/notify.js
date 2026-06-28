@@ -1,43 +1,49 @@
-// Dynamic import used inside handler to prevent Netlify/AWS Lambda ESM-to-CJS compilation crashes
+const admin = require('firebase-admin');
 
-export const handler = async (event, context) => {
-  // Basic CORS headers
+// Initialize Firebase Admin SDK once
+if (!admin.apps.length) {
+  const envVar = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (envVar) {
+    try {
+      const serviceAccount = JSON.parse(envVar);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    } catch (err) {
+      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT:', err.message);
+    }
+  } else {
+    console.warn('FIREBASE_SERVICE_ACCOUNT env variable is not set.');
+  }
+}
+
+exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
 
-  // Only allow POST requests
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers, body: '' };
+  }
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   try {
-    // 1. Safely load firebase-admin inside the handler
-    const firebaseAdmin = await import('firebase-admin');
-    const admin = firebaseAdmin.default || firebaseAdmin;
-
-    // 2. Initialize if not already done
-    if (!admin.apps || admin.apps.length === 0) {
-      const envVar = process.env.FIREBASE_SERVICE_ACCOUNT;
-      if (!envVar) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'FIREBASE_SERVICE_ACCOUNT is completely missing from Netlify env variables' }) };
-      }
-      
-      const serviceAccount = JSON.parse(envVar);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-    }
-
-    // 3. Parse Request
     const { token, title, body, data } = JSON.parse(event.body);
+
     if (!token) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'FCM token is required' }) };
     }
 
-    // 4. Send Message
+    if (!admin.apps.length) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Firebase Admin not initialized. Check FIREBASE_SERVICE_ACCOUNT env variable.' }) };
+    }
+
     const message = {
       notification: {
         title: title || 'Notification',
@@ -55,11 +61,11 @@ export const handler = async (event, context) => {
       body: JSON.stringify({ success: true, response }),
     };
   } catch (error) {
-    console.error('Error in notify function:', error);
+    console.error('Error sending notification:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Function crashed', details: error.message, stack: error.stack }),
+      body: JSON.stringify({ error: 'Failed to send notification', details: error.message }),
     };
   }
 };
