@@ -1,4 +1,5 @@
-import admin from 'firebase-admin';
+import adminPkg from 'firebase-admin';
+const admin = adminPkg.default || adminPkg;
 
 // Initialize Firebase Admin SDK
 // This requires the FIREBASE_SERVICE_ACCOUNT environment variable to be set in Netlify
