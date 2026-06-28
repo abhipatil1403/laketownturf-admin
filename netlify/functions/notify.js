@@ -1,5 +1,4 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+// Dynamic import used inside handler to prevent Netlify/AWS Lambda ESM-to-CJS compilation crashes
 
 export const handler = async (event, context) => {
   // Basic CORS headers
@@ -16,7 +15,8 @@ export const handler = async (event, context) => {
 
   try {
     // 1. Safely load firebase-admin inside the handler
-    const admin = require('firebase-admin');
+    const firebaseAdmin = await import('firebase-admin');
+    const admin = firebaseAdmin.default || firebaseAdmin;
 
     // 2. Initialize if not already done
     if (!admin.apps || admin.apps.length === 0) {
