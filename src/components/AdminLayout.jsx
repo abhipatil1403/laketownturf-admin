@@ -1,6 +1,6 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Users, Calendar, Clock, LogOut, Shield, Settings } from 'lucide-react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Users, Calendar, Clock, LogOut, Shield, Settings } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 
@@ -15,6 +15,7 @@ export default function AdminLayout() {
   };
 
   const navItems = [
+    { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, exact: true },
     { name: 'Users', path: '/users', icon: <Users size={20} /> },
     { name: 'Slots', path: '/slots', icon: <Clock size={20} /> },
     { name: 'Bookings', path: '/bookings', icon: <Calendar size={20} /> },
@@ -35,6 +36,7 @@ export default function AdminLayout() {
             <NavLink
               key={item.name}
               to={item.path}
+              end={item.exact}
               className={({ isActive }) =>
                 `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive

@@ -6,6 +6,7 @@ import { auth, db } from './firebase';
 
 import Login from './pages/Login';
 import AdminLayout from './components/AdminLayout';
+import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 import SlotsPage from './pages/SlotsPage';
 import BookingsPage from './pages/BookingsPage';
@@ -72,7 +73,7 @@ function App() {
           path="/" 
           element={user && isAdmin ? <AdminLayout /> : <Navigate to="/login" />}
         >
-          <Route index element={<Navigate to="/users" />} />
+          <Route index element={<DashboardPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="slots" element={<SlotsPage />} />
           <Route path="bookings" element={<BookingsPage />} />
