@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle, CreditCard, Copy } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
 
 export default function BookingsPage() {
@@ -346,6 +346,53 @@ export default function BookingsPage() {
                                 </div>
                               </div>
                             </div>
+                            
+                            {/* Payment Transaction Details */}
+                            {booking.razorpayPaymentId && (
+                              <div className="mt-6 pt-6 border-t border-cardBorder">
+                                <h4 className="flex items-center text-sm font-bold text-textPrimary mb-4 uppercase tracking-wider">
+                                  <CreditCard size={16} className="mr-2" /> Razorpay Transaction Details
+                                </h4>
+                                <div className="bg-darkNavySurface p-4 rounded-lg border border-cardBorder grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-xs text-textSecondary uppercase tracking-wide mb-1">Payment ID</p>
+                                    <div className="flex items-center">
+                                      <p className="font-mono text-sm text-textPrimary">{booking.razorpayPaymentId}</p>
+                                      <button 
+                                        onClick={() => navigator.clipboard.writeText(booking.razorpayPaymentId)}
+                                        className="ml-2 text-textSecondary hover:text-primaryGreen transition-colors"
+                                        title="Copy to clipboard"
+                                      >
+                                        <Copy size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-textSecondary uppercase tracking-wide mb-1">Order ID</p>
+                                    <div className="flex items-center">
+                                      <p className="font-mono text-sm text-textPrimary">{booking.razorpayOrderId}</p>
+                                      <button 
+                                        onClick={() => navigator.clipboard.writeText(booking.razorpayOrderId)}
+                                        className="ml-2 text-textSecondary hover:text-primaryGreen transition-colors"
+                                        title="Copy to clipboard"
+                                      >
+                                        <Copy size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-textSecondary uppercase tracking-wide mb-1">Amount Paid</p>
+                                    <p className="text-sm font-bold text-primaryGreen">₹{booking.amount}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-textSecondary uppercase tracking-wide mb-1">Transaction Time</p>
+                                    <p className="text-sm text-textPrimary">
+                                      {new Date(booking.timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Verification Actions */}
                             {booking.status === 'pending_verification' && (
