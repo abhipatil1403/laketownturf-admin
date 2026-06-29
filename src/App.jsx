@@ -10,6 +10,8 @@ import UsersPage from './pages/UsersPage';
 import SlotsPage from './pages/SlotsPage';
 import BookingsPage from './pages/BookingsPage';
 import SettingsPage from './pages/SettingsPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -60,6 +62,10 @@ function App() {
           path="/login" 
           element={!user ? <Login /> : (isAdmin ? <Navigate to="/users" /> : <div className="min-h-screen bg-darkNavy flex items-center justify-center text-textSecondary">Configuring admin access... Please wait.</div>)} 
         />
+        
+        {/* Public Legal Routes */}
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         
         {/* Protected Admin Routes */}
         <Route 
