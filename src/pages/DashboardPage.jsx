@@ -4,7 +4,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { subDays, format } from 'date-fns';
 import { db } from '../firebase';
 import { Users, Calendar, DollarSign, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -114,7 +113,7 @@ export default function DashboardPage() {
       <div className="bg-darkNavySurface border border-cardBorder rounded-xl p-6 shadow-lg h-96">
         <h2 className="text-lg font-bold text-textPrimary mb-6">Revenue - Last 7 Days</h2>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#1DB954" stopOpacity={0.8}/>
@@ -134,20 +133,6 @@ export default function DashboardPage() {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-darkNavySurface border border-cardBorder rounded-xl p-6 shadow-lg">
-        <h2 className="text-lg font-bold text-textPrimary mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link to="/users" className="block text-center p-4 bg-darkNavy rounded-lg border border-cardBorder hover:border-primaryGreen transition-all hover:-translate-y-1 text-textPrimary font-medium shadow-md hover:shadow-primaryGreen/20">
-            Manage Users
-          </Link>
-          <Link to="/slots" className="block text-center p-4 bg-darkNavy rounded-lg border border-cardBorder hover:border-primaryGreen transition-all hover:-translate-y-1 text-textPrimary font-medium shadow-md hover:shadow-primaryGreen/20">
-            Configure Slots
-          </Link>
-          <Link to="/bookings" className="block text-center p-4 bg-darkNavy rounded-lg border border-cardBorder hover:border-primaryGreen transition-all hover:-translate-y-1 text-textPrimary font-medium shadow-md hover:shadow-primaryGreen/20">
-            View Bookings
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
