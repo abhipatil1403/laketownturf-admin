@@ -519,8 +519,10 @@ export default function BookingsPage() {
                     alert("Please enter a specific reason.");
                     return;
                   }
-                  updateBookingStatus(cancellingBookingId, 'cancelled', finalReason);
-                  setCancellingBookingId(null);
+                  if (window.confirm("CAUTION: Once you cancel this booking, a refund will be processed immediately through Razorpay and cannot be undone. Are you sure you want to proceed?")) {
+                    updateBookingStatus(cancellingBookingId, 'cancelled', finalReason);
+                    setCancellingBookingId(null);
+                  }
                 }}
                 className="px-4 py-2 bg-dangerRed text-white font-bold rounded hover:bg-opacity-90 transition-colors"
               >
