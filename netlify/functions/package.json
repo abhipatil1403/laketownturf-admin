@@ -1,7 +1,0 @@
-{
-  "type": "commonjs",
-  "dependencies": {
-    "firebase-admin": "^14.1.0",
-    "@netlify/functions": "^2.6.0"
-  }
-}
