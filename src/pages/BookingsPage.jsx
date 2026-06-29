@@ -9,7 +9,7 @@ export default function BookingsPage() {
   const [usersMap, setUsersMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('pending_verification'); // 'pending_verification', 'upcoming', 'past', 'all'
+  const [filter, setFilter] = useState('all'); // 'pending_verification', 'upcoming', 'past', 'all'
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedBookingId, setExpandedBookingId] = useState(null);
 
@@ -215,30 +215,37 @@ export default function BookingsPage() {
       {/* Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-wrap bg-darkNavySurface border border-cardBorder rounded-lg p-1 gap-1">
-          <button 
-            onClick={() => setFilter('pending_verification')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'pending_verification' ? 'bg-amberCTA text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
-          >
-            Pending Verification
-          </button>
-          <button 
-            onClick={() => setFilter('upcoming')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'upcoming' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
-          >
-            Upcoming
-          </button>
-          <button 
-            onClick={() => setFilter('past')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'past' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
-          >
-            Past
-          </button>
-          <button 
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'all' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
-          >
-            All
-          </button>
+          {(() => {
+            const pendingCount = bookings.filter(b => b.status === 'pending_verification').length;
+            return (
+              <>
+                <button 
+                  onClick={() => setFilter('all')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'all' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
+                >
+                  All
+                </button>
+                <button 
+                  onClick={() => setFilter('pending_verification')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'pending_verification' ? 'bg-amberCTA text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
+                >
+                  Pending Verification {pendingCount > 0 ? `(${pendingCount})` : ''}
+                </button>
+                <button 
+                  onClick={() => setFilter('upcoming')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'upcoming' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
+                >
+                  Upcoming
+                </button>
+                <button 
+                  onClick={() => setFilter('past')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === 'past' ? 'bg-primaryGreen text-darkNavy' : 'text-textSecondary hover:text-textPrimary'}`}
+                >
+                  Past
+                </button>
+              </>
+            );
+          })()}
         </div>
 
         <div className="relative">
