@@ -199,7 +199,9 @@ export default function UsersPage() {
                   )}
                 </td>
               </tr>
-            )})}
+                );
+              })
+            )}
             
           </tbody>
         </table>
