@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle, CreditCard, Copy } from 'lucide-react';
+import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle, CreditCard, Copy, Filter, Clock, Check, Download } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
 
 export default function BookingsPage() {
@@ -139,7 +139,7 @@ export default function BookingsPage() {
           fetch('/.netlify/functions/notify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: user.fcmToken, title, body })
+            body: JSON.stringify({ token: user.fcmToken, title, body, data: { link: 'laketownturf://bookings' } })
           }).catch(err => console.error('Notification error:', err));
         }
       }
@@ -206,6 +206,36 @@ export default function BookingsPage() {
 
   const filteredBookings = getFilteredBookings();
 
+  const exportToCSV = () => {
+    if (filteredBookings.length === 0) return;
+    const headers = ['Booking ID', 'User Name', 'Flat No', 'Date', 'Slot ID', 'Amount (INR)', 'Status', 'Payment ID'];
+    const csvRows = [headers.join(',')];
+    
+    filteredBookings.forEach(b => {
+      const user = usersMap[b.uid] || {};
+      const row = [
+        b.id,
+        `"${user.name || 'Unknown'}"`,
+        `"${user.flatNo || 'Unknown'}"`,
+        b.date,
+        b.slotId,
+        b.amount || 0,
+        b.status,
+        b.razorpayPaymentId || 'N/A'
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bookings_export_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -256,15 +286,25 @@ export default function BookingsPage() {
           })()}
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search by name, flat, or date..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-64 bg-darkNavySurface border border-cardBorder rounded-lg pl-10 pr-4 py-2.5 text-sm text-textPrimary focus:outline-none focus:border-primaryGreen transition-colors"
-          />
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-textSecondary" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search by name, flat, or date..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-64 bg-darkNavySurface border border-cardBorder rounded-lg pl-10 pr-4 py-2.5 text-sm text-textPrimary focus:outline-none focus:border-primaryGreen transition-colors"
+            />
+          </div>
+          
+          <button 
+            onClick={exportToCSV}
+            className="flex items-center space-x-2 px-4 py-2.5 bg-darkNavySurface border border-cardBorder text-primaryGreen rounded-lg hover:bg-primaryGreen/10 transition-colors shadow-sm"
+          >
+            <Download size={18} />
+            <span className="hidden md:inline font-medium">Export CSV</span>
+          </button>
         </div>
       </div>
 

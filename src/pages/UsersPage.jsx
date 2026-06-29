@@ -61,7 +61,7 @@ export default function UsersPage() {
         fetch('/.netlify/functions/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: user.fcmToken, title, body })
+          body: JSON.stringify({ token: user.fcmToken, title, body, data: { link: 'laketownturf://profile' } })
         }).catch(err => console.error('Notification error:', err));
       }
     } catch (error) {

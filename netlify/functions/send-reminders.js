@@ -77,6 +77,9 @@ const handler = async (event) => {
                   notification: {
                     title: 'Upcoming Turf Slot! ⚽',
                     body: `Your booking for ${hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)}:${min === 0 ? '00' : min} ${hour >= 12 ? 'PM' : 'AM'} starts in ${Math.round(timeDiffMins)} minutes!`,
+                  },
+                  data: {
+                    link: "laketownturf://bookings"
                   }
                 });
                 console.log(`Reminder sent to user ${booking.uid} for slot ${booking.slotId}`);
