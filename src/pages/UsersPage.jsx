@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Search } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Revocation Modal State
   const [revokingUserId, setRevokingUserId] = useState(null);
@@ -73,11 +74,41 @@ export default function UsersPage() {
     return <div className="text-textSecondary">Loading users...</div>;
   }
 
+  const getFilteredUsers = () => {
+    let filtered = users.filter(u => u.role !== 'admin');
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(u => {
+        return (u.name?.toLowerCase().includes(q) ||
+                u.email?.toLowerCase().includes(q) ||
+                u.phone?.toLowerCase().includes(q) ||
+                u.flatNo?.toLowerCase().includes(q) ||
+                u.type?.toLowerCase().includes(q) ||
+                (u.status || 'pending').toLowerCase().includes(q));
+      });
+    }
+    return filtered;
+  };
+
+  const filteredUsers = getFilteredUsers();
+
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-textPrimary">User Management</h2>
-        <p className="text-textSecondary mt-1">Approve or reject turf registrations.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-2xl font-bold text-textPrimary">User Management</h2>
+          <p className="text-textSecondary mt-1">Approve or reject turf registrations.</p>
+        </div>
+        <div className="relative w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-darkNavySurface border border-cardBorder rounded-lg text-textPrimary focus:outline-none focus:border-primaryGreen transition-colors"
+          />
+          <Search className="absolute left-3 top-2.5 text-textSecondary" size={18} />
+        </div>
       </div>
 
       <div className="bg-darkNavySurface border border-cardBorder rounded-xl overflow-hidden shadow-xl">
@@ -92,9 +123,14 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-cardBorder">
-            {users.filter(u => u.role !== 'admin').map((user) => {
-              const statusStr = (user.status || 'pending').toLowerCase();
-              return (
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="py-8 text-center text-textSecondary">No users found matching your search.</td>
+              </tr>
+            ) : (
+              filteredUsers.map((user) => {
+                const statusStr = (user.status || 'pending').toLowerCase();
+                return (
               <tr key={user.id} className="hover:bg-darkNavy/30 transition-colors">
                 <td className="py-4 px-6">
                   <div className="font-medium text-textPrimary">{user.name}</div>
@@ -165,13 +201,6 @@ export default function UsersPage() {
               </tr>
             )})}
             
-            {users.filter(u => u.role !== 'admin').length === 0 && (
-              <tr>
-                <td colSpan="5" className="py-8 text-center text-textSecondary">
-                  No users found in the database.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
