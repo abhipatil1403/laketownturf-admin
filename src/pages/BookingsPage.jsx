@@ -190,8 +190,16 @@ export default function BookingsPage() {
       });
     }
 
-    // Sort by date descending
-    filtered.sort((a, b) => b.date.localeCompare(a.date));
+    // Sort by date descending, but prioritize pending_verification
+    filtered.sort((a, b) => {
+      const isAPending = a.status === 'pending_verification';
+      const isBPending = b.status === 'pending_verification';
+      
+      if (isAPending && !isBPending) return -1;
+      if (!isAPending && isBPending) return 1;
+      
+      return b.date.localeCompare(a.date);
+    });
 
     return filtered;
   };
