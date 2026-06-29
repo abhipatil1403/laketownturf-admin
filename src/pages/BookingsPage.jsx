@@ -146,31 +146,16 @@ export default function BookingsPage() {
       
       // Notify Waitlist Users if cancelled
       if (newStatus === 'cancelled' && booking?.slotId) {
-        try {
-          const waitlistRef = doc(db, 'waitlists', booking.slotId);
-          const waitlistSnap = await getDoc(waitlistRef);
-          
-          if (waitlistSnap.exists()) {
-            const uids = waitlistSnap.data().uids || [];
-            uids.forEach(uid => {
-              const waitlistUser = usersMap[uid];
-              if (waitlistUser && waitlistUser.fcmToken) {
-                const wlTitle = 'Slot Available!';
-                const wlBody = `A slot you were waiting for on ${format(parseISO(booking.date), 'dd-MM-yyyy')} from ${formatTime12hr(booking.startTime)} - ${formatTime12hr(booking.endTime)} is now open. Book quickly!`;
-                
-                fetch('/.netlify/functions/notify', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ token: waitlistUser.fcmToken, title: wlTitle, body: wlBody, data: { link: 'laketownturf://home' } })
-                }).catch(err => console.error('Waitlist Notification error:', err));
-              }
-            });
-            // Clear the waitlist after notifying
-            await deleteDoc(waitlistRef);
-          }
-        } catch (err) {
-          console.error('Error processing waitlist:', err);
-        }
+        fetch('/.netlify/functions/notify-waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slotId: booking.slotId,
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime
+          })
+        }).catch(err => console.error('Waitlist Notification error:', err));
       }
     } catch (err) {
       console.error(err);
