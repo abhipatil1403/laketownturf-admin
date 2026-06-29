@@ -17,8 +17,8 @@ exports.handler = async (event, context) => {
     }
 
     const instance = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_T7Pfr9lEHrS3ft',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || 'yju0uwCZkhJPGpJ81Sa4Jkc9',
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
 
     const options = {

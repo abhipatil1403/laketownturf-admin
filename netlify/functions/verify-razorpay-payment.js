@@ -15,7 +15,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'yju0uwCZkhJPGpJ81Sa4Jkc9';
+    const secret = process.env.RAZORPAY_KEY_SECRET;
 
     // Create the expected signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
