@@ -76,6 +76,14 @@ export default function UsersPage() {
 
   const getFilteredUsers = () => {
     let filtered = users.filter(u => u.role !== 'admin');
+    
+    // Sort by creation time (newest first)
+    filtered.sort((a, b) => {
+      const timeA = a.createdAt || 0;
+      const timeB = b.createdAt || 0;
+      return timeB - timeA;
+    });
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(u => {
