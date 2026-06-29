@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CheckCircle, XCircle, Search } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -76,24 +77,6 @@ export default function UsersPage() {
 
   const getFilteredUsers = () => {
     let filtered = users.filter(u => u.role !== 'admin');
-    
-    // Sort by creation time (newest first)
-    filtered.sort((a, b) => {
-      const timeA = a.createdAt || 0;
-      const timeB = b.createdAt || 0;
-      
-      if (timeA === timeB) {
-        // Fallback: sort pending users to the top
-        const isAPending = (a.status || 'pending').toLowerCase() === 'pending';
-        const isBPending = (b.status || 'pending').toLowerCase() === 'pending';
-        if (isAPending && !isBPending) return -1;
-        if (!isAPending && isBPending) return 1;
-        
-        // Final fallback: alphabetical by name
-        return (a.name || '').localeCompare(b.name || '');
-      }
-      return timeB - timeA;
-    });
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -106,6 +89,20 @@ export default function UsersPage() {
                 (u.status || 'pending').toLowerCase().includes(q));
       });
     }
+
+    // Sort: pending users first (newest createdAt first within group),
+    // then all other statuses (also newest createdAt first)
+    filtered.sort((a, b) => {
+      const isAPending = (a.status || 'pending') === 'pending';
+      const isBPending = (b.status || 'pending') === 'pending';
+
+      if (isAPending && !isBPending) return -1;
+      if (!isAPending && isBPending) return 1;
+
+      // Within the same group, newest first
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
     return filtered;
   };
 
@@ -137,6 +134,7 @@ export default function UsersPage() {
               <th className="py-4 px-6 font-medium">Name</th>
               <th className="py-4 px-6 font-medium">Contact</th>
               <th className="py-4 px-6 font-medium">Flat / Type</th>
+              <th className="py-4 px-6 font-medium">Joined</th>
               <th className="py-4 px-6 font-medium">Status</th>
               <th className="py-4 px-6 font-medium text-right">Actions</th>
             </tr>
@@ -144,7 +142,7 @@ export default function UsersPage() {
           <tbody className="divide-y divide-cardBorder">
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="5" className="py-8 text-center text-textSecondary">No users found matching your search.</td>
+                <td colSpan="6" className="py-8 text-center text-textSecondary">No users found matching your search.</td>
               </tr>
             ) : (
               filteredUsers.map((user) => {
@@ -160,6 +158,14 @@ export default function UsersPage() {
                   <div className="text-textPrimary">{user.flatNo}</div>
                   <div className="text-xs text-textSecondary px-2 py-0.5 bg-darkNavy inline-block rounded border border-cardBorder mt-1">
                     {user.type}
+                  </div>
+                </td>
+                <td className="py-4 px-6">
+                  <div className="text-sm text-textPrimary">
+                    {user.createdAt ? format(new Date(user.createdAt), 'dd MMM yyyy') : '-'}
+                  </div>
+                  <div className="text-xs text-textSecondary">
+                    {user.createdAt ? format(new Date(user.createdAt), 'hh:mm a') : ''}
                   </div>
                 </td>
                 <td className="py-4 px-6">

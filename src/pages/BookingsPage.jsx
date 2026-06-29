@@ -190,7 +190,7 @@ export default function BookingsPage() {
       });
     }
 
-    // Sort by date descending, but prioritize pending_verification
+    // Sort: pending_verification first (newest first within group), then rest by timestamp desc
     filtered.sort((a, b) => {
       const isAPending = a.status === 'pending_verification';
       const isBPending = b.status === 'pending_verification';
@@ -198,7 +198,8 @@ export default function BookingsPage() {
       if (isAPending && !isBPending) return -1;
       if (!isAPending && isBPending) return 1;
       
-      return b.date.localeCompare(a.date);
+      // Within the same priority group, sort by booking creation time (newest first)
+      return (b.timestamp || 0) - (a.timestamp || 0);
     });
 
     return filtered;
@@ -316,6 +317,7 @@ export default function BookingsPage() {
               <tr className="bg-darkNavy border-b border-cardBorder text-xs uppercase tracking-wider text-textSecondary">
                 <th className="py-4 px-6 font-semibold">Booked By</th>
                 <th className="py-4 px-6 font-semibold">Slot Info</th>
+                <th className="py-4 px-6 font-semibold">Booked On</th>
                 <th className="py-4 px-6 font-semibold">Payment</th>
                 <th className="py-4 px-6 font-semibold">Status</th>
                 <th className="py-4 px-6 font-semibold text-right">Actions</th>
@@ -350,11 +352,19 @@ export default function BookingsPage() {
                           <div className="text-xs text-textSecondary mt-0.5">{user?.flatNo || '-'}</div>
                         </td>
                         <td className="py-4 px-6">
-                          <div className="text-textPrimary font-medium">
+                          <div className="font-medium text-textPrimary">
                             {format(parseISO(booking.date), 'dd-MM-yyyy')}
                           </div>
                           <div className="text-sm text-textSecondary">
                             {formatTime12hr(booking.startTime)} - {formatTime12hr(booking.endTime)}
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="text-textPrimary text-sm">
+                            {booking.timestamp ? format(new Date(booking.timestamp), 'dd MMM yyyy') : '-'}
+                          </div>
+                          <div className="text-xs text-textSecondary">
+                            {booking.timestamp ? format(new Date(booking.timestamp), 'hh:mm a') : ''}
                           </div>
                         </td>
                         <td className="py-4 px-6">
@@ -392,7 +402,7 @@ export default function BookingsPage() {
                       {/* Expanded Roster View */}
                       {isExpanded && (
                         <tr className="bg-darkNavy/50">
-                          <td colSpan="5" className="py-6 px-6 border-b border-cardBorder">
+                          <td colSpan="6" className="py-6 px-6 border-b border-cardBorder">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                               <div>
                                 <h4 className="flex items-center text-sm font-bold text-textPrimary mb-3 uppercase tracking-wider">
