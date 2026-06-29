@@ -81,6 +81,26 @@ export default function BookingsPage() {
       
       const booking = bookings.find(b => b.id === bookingId);
 
+      // Process Razorpay Refund if canceling
+      if (newStatus === 'cancelled' && booking?.razorpayPaymentId) {
+        try {
+          const res = await fetch('/.netlify/functions/refund-razorpay-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              paymentId: booking.razorpayPaymentId, 
+              amount: booking.amount 
+            })
+          });
+          if (!res.ok) throw new Error('Refund API returned ' + res.status);
+          updateData.paymentStatus = 'refunded';
+        } catch (err) {
+          console.error("Refund failed", err);
+          alert("Failed to process automatic refund on Razorpay. Please refund manually in the Razorpay Dashboard.");
+          updateData.paymentStatus = 'refund_failed';
+        }
+      }
+
       if (newStatus === 'cancelled' && bookingId.startsWith('booking_')) {
         // Copy to a new auto-ID document to free up the "lock" document for the slot
         const cancelledRef = doc(collection(db, 'bookings'));
