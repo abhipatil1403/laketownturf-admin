@@ -8,8 +8,10 @@ export default function AdminLayout() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/login');
+    if (window.confirm("Are you sure you want to log out?")) {
+      await signOut(auth);
+      navigate('/login');
+    }
   };
 
   const navItems = [
