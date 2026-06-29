@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Calendar, Clock, IndianRupee, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { format, addDays, subDays, startOfDay, getDay } from 'date-fns';
@@ -25,85 +25,67 @@ export default function SlotsPage() {
 
   // Fetch slots whenever the date changes
   useEffect(() => {
-    fetchSlots(selectedDate);
-  }, [selectedDate]);
-
-  const fetchSlots = async (dateObj) => {
     setIsLoading(true);
     setError('');
-    try {
-      const dateStr = format(dateObj, 'yyyy-MM-dd');
-      const dayOfWeek = getDay(dateObj); // 0 = Sunday, 1 = Monday, ... 6 = Saturday
-      
-      // 1. Generate Virtual Slots
-      let virtualSlots = [];
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-      if (dayOfWeek === 1) {
-        // Monday: Closed
-      } else if (!isWeekend) {
-        // Tuesday to Friday: 7-8 PM (19:00 - 20:00), 200 Rs
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayOfWeek = getDay(selectedDate);
+    
+    // 1. Generate Virtual Slots
+    let virtualSlots = [];
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    if (dayOfWeek === 1) {
+      // Monday: Closed
+    } else if (!isWeekend) {
+      // Tuesday to Friday: 7-8 PM (19:00 - 20:00), 200 Rs
+      virtualSlots.push({
+        slotId: `${dateStr}-19:00`,
+        date: dateStr,
+        startTime: "19:00",
+        endTime: "20:00",
+        price: 200,
+        isBooked: false,
+        bookedBy: null
+      });
+    } else {
+      // Saturday and Sunday: Morning (7-11 AM), Evening (4-8 PM), 300 Rs
+      const morningHours = [7, 8, 9, 10];
+      morningHours.forEach(h => {
+        const sTime = `${h.toString().padStart(2, '0')}:00`;
         virtualSlots.push({
-          slotId: `${dateStr}-19:00`,
+          slotId: `${dateStr}-${sTime}`,
           date: dateStr,
-          startTime: "19:00",
-          endTime: "20:00",
-          price: 200,
+          startTime: sTime,
+          endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
+          price: 300,
           isBooked: false,
           bookedBy: null
         });
-      } else {
-        // Saturday and Sunday: Morning (7-11 AM), Evening (4-8 PM), 300 Rs
-        const morningHours = [7, 8, 9, 10];
-        morningHours.forEach(h => {
-          const sTime = `${h.toString().padStart(2, '0')}:00`;
-          virtualSlots.push({
-            slotId: `${dateStr}-${sTime}`,
-            date: dateStr,
-            startTime: sTime,
-            endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
-            price: 300,
-            isBooked: false,
-            bookedBy: null
-          });
-        });
-
-        const eveningHours = [16, 17, 18, 19];
-        eveningHours.forEach(h => {
-          const sTime = `${h.toString().padStart(2, '0')}:00`;
-          virtualSlots.push({
-            slotId: `${dateStr}-${sTime}`,
-            date: dateStr,
-            startTime: sTime,
-            endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
-            price: 300,
-            isBooked: false,
-            bookedBy: null
-          });
-        });
-      }
-
-      // 2. Fetch overrides (price changes or manual blocks by admin)
-      const overridesQ = query(collection(db, 'slots'), where('date', '==', dateStr));
-      const overridesSnap = await getDocs(overridesQ);
-      const overrides = {};
-      overridesSnap.forEach(doc => overrides[doc.id] = doc.data());
-
-      // 3. Fetch bookings
-      const bookingsQ = query(collection(db, 'bookings'), where('date', '==', dateStr));
-      const bookingsSnap = await getDocs(bookingsQ);
-      const bookings = {};
-      bookingsSnap.forEach(doc => {
-        const data = doc.data();
-        if (data.status !== 'cancelled') {
-          bookings[data.slotId] = data;
-        }
       });
 
-      // 4. Merge
+      const eveningHours = [16, 17, 18, 19];
+      eveningHours.forEach(h => {
+        const sTime = `${h.toString().padStart(2, '0')}:00`;
+        virtualSlots.push({
+          slotId: `${dateStr}-${sTime}`,
+          date: dateStr,
+          startTime: sTime,
+          endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
+          price: 300,
+          isBooked: false,
+          bookedBy: null
+        });
+      });
+    }
+
+    let currentOverrides = {};
+    let currentBookings = {};
+
+    const updateFinalSlots = () => {
       const finalSlots = virtualSlots.map(vSlot => {
-        const override = overrides[vSlot.slotId];
-        const booking = bookings[vSlot.slotId];
+        const override = currentOverrides[vSlot.slotId];
+        const booking = currentBookings[vSlot.slotId];
         
         return {
           ...vSlot,
@@ -114,17 +96,43 @@ export default function SlotsPage() {
         };
       });
       
-      // Sort by start time
       finalSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
-      
       setSlots(finalSlots);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to fetch slots.');
-    } finally {
       setIsLoading(false);
-    }
-  };
+    };
+
+    const overridesQ = query(collection(db, 'slots'), where('date', '==', dateStr));
+    const unsubOverrides = onSnapshot(overridesQ, (snap) => {
+      currentOverrides = {};
+      snap.forEach(doc => currentOverrides[doc.id] = doc.data());
+      updateFinalSlots();
+    }, (err) => {
+      console.error(err);
+      setError('Failed to fetch overrides.');
+      setIsLoading(false);
+    });
+
+    const bookingsQ = query(collection(db, 'bookings'), where('date', '==', dateStr));
+    const unsubBookings = onSnapshot(bookingsQ, (snap) => {
+      currentBookings = {};
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (data.status !== 'cancelled') {
+          currentBookings[data.slotId] = data;
+        }
+      });
+      updateFinalSlots();
+    }, (err) => {
+      console.error(err);
+      setError('Failed to fetch bookings.');
+      setIsLoading(false);
+    });
+
+    return () => {
+      unsubOverrides();
+      unsubBookings();
+    };
+  }, [selectedDate]);
 
   const handleUpdatePrice = async (slot, newPrice) => {
     try {

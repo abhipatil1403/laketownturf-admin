@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Settings, Save, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,15 +20,11 @@ export default function SettingsPage() {
   const [initialSettings, setInitialSettings] = useState(null);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
     setIsLoading(true);
     setError('');
-    try {
-      const docRef = doc(db, 'settings', 'general');
-      const docSnap = await getDoc(docRef);
+    
+    const docRef = doc(db, 'settings', 'general');
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setSettings({
@@ -44,15 +40,23 @@ export default function SettingsPage() {
           maintenanceEndDate: data.maintenanceEndDate || ''
         });
       } else {
-        setInitialSettings({ ...settings });
+        // Fallback or empty if not exists
+        setInitialSettings({
+          maintenanceMode: false,
+          maintenanceMessage: '',
+          maintenanceStartDate: '',
+          maintenanceEndDate: ''
+        });
       }
-    } catch (err) {
+      setIsLoading(false);
+    }, (err) => {
       console.error(err);
       setError('Failed to fetch settings.');
-    } finally {
       setIsLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);

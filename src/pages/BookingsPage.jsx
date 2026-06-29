@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle, CreditCard, Copy } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
@@ -39,38 +39,40 @@ export default function BookingsPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
     setIsLoading(true);
-    setError('');
-    try {
-      // 1. Fetch Users to map UID to Name/FlatNo
-      const usersSnap = await getDocs(collection(db, 'users'));
+    
+    // 1. Listen to Users
+    const unsubscribeUsers = onSnapshot(collection(db, 'users'), (usersSnap) => {
       const uMap = {};
       usersSnap.forEach(doc => {
         uMap[doc.data().uid] = doc.data();
       });
       setUsersMap(uMap);
+    }, (err) => {
+      console.error(err);
+      setError('Failed to load users.');
+    });
 
-      // 2. Fetch Bookings
-      const bookingsQ = query(collection(db, 'bookings'), orderBy('timestamp', 'desc'));
-      const bookingsSnap = await getDocs(bookingsQ);
-      
+    // 2. Listen to Bookings
+    const bookingsQ = query(collection(db, 'bookings'), orderBy('timestamp', 'desc'));
+    const unsubscribeBookings = onSnapshot(bookingsQ, (bookingsSnap) => {
       const bList = [];
       bookingsSnap.forEach(doc => {
         bList.push({ id: doc.id, ...doc.data() });
       });
-      
       setBookings(bList);
-    } catch (err) {
+      setIsLoading(false);
+    }, (err) => {
       console.error(err);
       setError('Failed to load bookings.');
-    } finally {
       setIsLoading(false);
-    }
-  };
+    });
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeBookings();
+    };
+  }, []);
 
   const updateBookingStatus = async (bookingId, newStatus, reason = null) => {
     try {
@@ -141,8 +143,6 @@ export default function BookingsPage() {
           }).catch(err => console.error('Notification error:', err));
         }
       }
-
-      await fetchData(); // Refresh
     } catch (err) {
       console.error(err);
       setError("Failed to update booking.");
