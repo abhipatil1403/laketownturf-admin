@@ -81,6 +81,17 @@ export default function UsersPage() {
     filtered.sort((a, b) => {
       const timeA = a.createdAt || 0;
       const timeB = b.createdAt || 0;
+      
+      if (timeA === timeB) {
+        // Fallback: sort pending users to the top
+        const isAPending = (a.status || 'pending').toLowerCase() === 'pending';
+        const isBPending = (b.status || 'pending').toLowerCase() === 'pending';
+        if (isAPending && !isBPending) return -1;
+        if (!isAPending && isBPending) return 1;
+        
+        // Final fallback: alphabetical by name
+        return (a.name || '').localeCompare(b.name || '');
+      }
       return timeB - timeA;
     });
 
