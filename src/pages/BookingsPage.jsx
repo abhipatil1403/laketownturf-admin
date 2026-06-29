@@ -159,7 +159,16 @@ export default function BookingsPage() {
         const user = usersMap[b.uid];
         const name = user?.name?.toLowerCase() || '';
         const flat = user?.flatNo?.toLowerCase() || '';
-        return name.includes(lowerQuery) || flat.includes(lowerQuery) || b.date.includes(lowerQuery);
+        const paymentId = b.razorpayPaymentId?.toLowerCase() || '';
+        const orderId = b.razorpayOrderId?.toLowerCase() || '';
+        const amountStr = b.amount?.toString() || '';
+        
+        return name.includes(lowerQuery) || 
+               flat.includes(lowerQuery) || 
+               b.date.includes(lowerQuery) ||
+               paymentId.includes(lowerQuery) ||
+               orderId.includes(lowerQuery) ||
+               amountStr.includes(lowerQuery);
       });
     }
 
