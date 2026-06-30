@@ -37,7 +37,7 @@ export default function DashboardPage() {
       let revenue = 0;
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (data.status === 'CONFIRMED') {
+        if (data.status?.toLowerCase() === 'confirmed') {
           bookings++;
           revenue += (data.amount || 0);
         }
@@ -56,7 +56,7 @@ export default function DashboardPage() {
       
       snap.forEach(doc => {
         const data = doc.data();
-        if (data.status === 'CONFIRMED' && revenueMap[data.date] !== undefined) {
+        if (data.status?.toLowerCase() === 'confirmed' && revenueMap[data.date] !== undefined) {
           revenueMap[data.date] += (data.amount || 0);
         }
       });
