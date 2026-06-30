@@ -85,6 +85,7 @@ export default function UsersPage() {
                 u.email?.toLowerCase().includes(q) ||
                 u.phone?.toLowerCase().includes(q) ||
                 u.flatNo?.toLowerCase().includes(q) ||
+                u.address?.toLowerCase().includes(q) ||
                 u.type?.toLowerCase().includes(q) ||
                 (u.status || 'pending').toLowerCase().includes(q));
       });
@@ -133,7 +134,7 @@ export default function UsersPage() {
             <tr className="bg-darkNavy/50 border-b border-cardBorder text-textSecondary text-sm uppercase tracking-wider">
               <th className="py-4 px-6 font-medium">Name</th>
               <th className="py-4 px-6 font-medium">Contact</th>
-              <th className="py-4 px-6 font-medium">Flat / Type</th>
+              <th className="py-4 px-6 font-medium">Flat/Addr / Type</th>
               <th className="py-4 px-6 font-medium">Joined</th>
               <th className="py-4 px-6 font-medium">Status</th>
               <th className="py-4 px-6 font-medium text-right">Actions</th>
@@ -155,7 +156,9 @@ export default function UsersPage() {
                 </td>
                 <td className="py-4 px-6 text-textSecondary">{user.phone}</td>
                 <td className="py-4 px-6">
-                  <div className="text-textPrimary">{user.flatNo}</div>
+                  <div className="text-textPrimary">
+                    {user.type === 'OUTSIDER' ? (user.address || 'No Address') : (user.flatNo || 'N/A')}
+                  </div>
                   <div className="text-xs text-textSecondary px-2 py-0.5 bg-darkNavy inline-block rounded border border-cardBorder mt-1">
                     {user.type}
                   </div>
