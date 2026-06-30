@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, query, onSnapshot, getDocs, doc, updateDoc, setDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Calendar, Search, AlertTriangle, IndianRupee, Users, CheckCircle, XCircle, CreditCard, Copy, Filter, Clock, Check, Download } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore, startOfToday } from 'date-fns';
 
 export default function BookingsPage() {
+  const location = useLocation();
   const [bookings, setBookings] = useState([]);
   const [usersMap, setUsersMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // 'pending_verification', 'upcoming', 'past', 'all'
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || '');
   const [expandedBookingId, setExpandedBookingId] = useState(null);
 
   // Cancellation Modal State

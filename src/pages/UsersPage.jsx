@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CheckCircle, XCircle, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function UsersPage() {
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || '');
 
   // Revocation Modal State
   const [revokingUserId, setRevokingUserId] = useState(null);

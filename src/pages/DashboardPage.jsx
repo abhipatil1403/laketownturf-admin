@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays, format } from 'date-fns';
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   });
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -90,10 +92,10 @@ export default function DashboardPage() {
   }
 
   const statCards = [
-    { title: "Today's Revenue", value: `₹${stats.todayRevenue}`, icon: <DollarSign size={24} />, color: "text-primaryGreen", bg: "bg-primaryGreen/10" },
-    { title: "Today's Bookings", value: stats.todayBookings, icon: <Calendar size={24} />, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { title: "Total Users", value: stats.totalUsers, icon: <Users size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { title: "Pending Approvals", value: stats.pendingUsers, icon: <Clock size={24} />, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { title: "Today's Revenue", value: `₹${stats.todayRevenue}`, icon: <DollarSign size={24} />, color: "text-primaryGreen", bg: "bg-primaryGreen/10", action: null },
+    { title: "Today's Bookings", value: stats.todayBookings, icon: <Calendar size={24} />, color: "text-blue-500", bg: "bg-blue-500/10", action: () => navigate('/bookings', { state: { searchQuery: new Date().toISOString().split('T')[0] } }) },
+    { title: "Total Users", value: stats.totalUsers, icon: <Users size={24} />, color: "text-purple-500", bg: "bg-purple-500/10", action: () => navigate('/users') },
+    { title: "Pending Approvals", value: stats.pendingUsers, icon: <Clock size={24} />, color: "text-amber-500", bg: "bg-amber-500/10", action: () => navigate('/users', { state: { searchQuery: 'pending' } }) },
   ];
 
   return (
@@ -104,7 +106,11 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, i) => (
-          <div key={i} className="bg-darkNavySurface border border-cardBorder rounded-xl p-6 flex items-center space-x-4 hover:border-primaryGreen/50 transition-colors shadow-lg">
+          <div 
+            key={i} 
+            onClick={card.action}
+            className={`bg-darkNavySurface border border-cardBorder rounded-xl p-6 flex items-center space-x-4 hover:border-primaryGreen/50 transition-colors shadow-lg ${card.action ? 'cursor-pointer' : ''}`}
+          >
             <div className={`p-4 rounded-lg ${card.bg} ${card.color}`}>
               {card.icon}
             </div>
