@@ -67,7 +67,7 @@ export default function DashboardPage() {
       });
       
       setChartData(last7Days.map(date => ({
-        name: format(new Date(date), 'MMM dd'),
+        name: format(new Date(date), 'EEE, MMM dd'),
         revenue: revenueMap[date],
         bookings: bookingsCountMap[date]
       })));
