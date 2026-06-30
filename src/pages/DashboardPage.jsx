@@ -52,18 +52,24 @@ export default function DashboardPage() {
       const snap = await getDocs(q);
       
       const revenueMap = {};
-      last7Days.forEach(date => revenueMap[date] = 0);
+      const bookingsCountMap = {};
+      last7Days.forEach(date => {
+        revenueMap[date] = 0;
+        bookingsCountMap[date] = 0;
+      });
       
       snap.forEach(doc => {
         const data = doc.data();
         if (data.status?.toLowerCase() === 'confirmed' && revenueMap[data.date] !== undefined) {
           revenueMap[data.date] += (data.amount || 0);
+          bookingsCountMap[data.date] += 1;
         }
       });
       
       setChartData(last7Days.map(date => ({
         name: format(new Date(date), 'MMM dd'),
-        revenue: revenueMap[date]
+        revenue: revenueMap[date],
+        bookings: bookingsCountMap[date]
       })));
     };
     
@@ -124,9 +130,19 @@ export default function DashboardPage() {
             <XAxis dataKey="name" stroke="#A0AEC0" axisLine={false} tickLine={false} />
             <YAxis stroke="#A0AEC0" axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val}`} />
             <Tooltip 
-              contentStyle={{ backgroundColor: '#1A202C', border: '1px solid #2D3748', borderRadius: '8px' }}
-              itemStyle={{ color: '#1DB954', fontWeight: 'bold' }}
-              formatter={(value) => [`₹${value}`, 'Revenue']}
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-[#1A202C] border border-[#2D3748] p-3 rounded-lg shadow-xl">
+                      <p className="text-[#A0AEC0] mb-1 text-sm font-medium">{label}</p>
+                      <p className="text-[#1DB954] font-bold">Revenue: ₹{data.revenue}</p>
+                      <p className="text-blue-400 font-bold mt-1">Bookings: {data.bookings}</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
             />
             <Area type="monotone" dataKey="revenue" stroke="#1DB954" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
           </AreaChart>
