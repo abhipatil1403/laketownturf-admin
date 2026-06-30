@@ -25,7 +25,7 @@ export default function DashboardPage() {
         const data = doc.data();
         if (data.role !== 'admin') {
           total++;
-          if (data.status === 'PENDING') pending++;
+          if (data.status?.toLowerCase() === 'pending') pending++;
         }
       });
       setStats(s => ({ ...s, totalUsers: total, pendingUsers: pending }));

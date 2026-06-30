@@ -94,8 +94,8 @@ export default function UsersPage() {
     // Sort: pending users first (newest createdAt first within group),
     // then all other statuses (also newest createdAt first)
     filtered.sort((a, b) => {
-      const isAPending = (a.status || 'pending') === 'pending';
-      const isBPending = (b.status || 'pending') === 'pending';
+      const isAPending = (a.status || 'pending').toLowerCase() === 'pending';
+      const isBPending = (b.status || 'pending').toLowerCase() === 'pending';
 
       if (isAPending && !isBPending) return -1;
       if (!isAPending && isBPending) return 1;
