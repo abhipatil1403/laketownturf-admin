@@ -47,8 +47,15 @@ const handler = async (event) => {
     
     bookingsSnapshot.forEach(doc => {
       const booking = doc.data();
-      if (booking.reminderSent === true) return; // Skip if already sent
       
+      const remindersSent = booking.remindersSent || {};
+      
+      // Legacy support: if the old flag is set, assume 30/15 are done to prevent duplicate spam
+      if (booking.reminderSent === true && Object.keys(remindersSent).length === 0) {
+        remindersSent.thirtyMin = true;
+        remindersSent.fifteenMin = true;
+      }
+
       // Parse slotId, e.g., 'slot_16_0' -> hour 16, min 0
       const slotParts = booking.slotId.split('_');
       if (slotParts.length < 3) return;
@@ -63,8 +70,31 @@ const handler = async (event) => {
       const timeDiffMs = slotStartTimeUTC.getTime() - now.getTime();
       const timeDiffMins = timeDiffMs / 60000;
       
-      // If the slot starts in 60 minutes or less, send a reminder
-      if (timeDiffMins > 0 && timeDiffMins <= 60) {
+      let reminderType = null;
+      let title = '';
+      let body = '';
+      
+      const formattedHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+      const formattedMin = min === 0 ? '00' : min;
+      const amPm = hour >= 12 ? 'PM' : 'AM';
+      const timeString = `${formattedHour}:${formattedMin} ${amPm}`;
+
+      // Check which time window we are in
+      if (timeDiffMins > 0 && timeDiffMins <= 15 && !remindersSent.fifteenMin) {
+        reminderType = 'fifteenMin';
+        title = 'Match Starts Soon! ⚽🏃‍♂️';
+        body = `Get ready! Your turf slot starts in ${Math.round(timeDiffMins)} minutes!`;
+      } else if (timeDiffMins > 15 && timeDiffMins <= 30 && !remindersSent.thirtyMin) {
+        reminderType = 'thirtyMin';
+        title = 'Turf Slot in 30 Mins ⏰';
+        body = `Time to lace up! Your match starts in ${Math.round(timeDiffMins)} minutes.`;
+      } else if (timeDiffMins > 1400 && timeDiffMins <= 1440 && !remindersSent.twentyFourHour) {
+        reminderType = 'twentyFourHour';
+        title = 'Tomorrow\'s Turf Booking 📅';
+        body = `Just a heads-up! Your slot is booked for tomorrow at ${timeString}.`;
+      }
+
+      if (reminderType) {
         promises.push((async () => {
           try {
             // Fetch user to get FCM token
@@ -74,25 +104,20 @@ const handler = async (event) => {
               if (userData.fcmToken) {
                 await messaging.send({
                   token: userData.fcmToken,
-                  notification: {
-                    title: 'Upcoming Turf Slot! ⚽',
-                    body: `Your booking for ${hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)}:${min === 0 ? '00' : min} ${hour >= 12 ? 'PM' : 'AM'} starts in ${Math.round(timeDiffMins)} minutes!`,
-                  },
-                  data: {
-                    link: "laketownturf://bookings"
-                  }
+                  notification: { title, body },
+                  data: { link: "laketownturf://bookings" }
                 });
-                console.log(`Reminder sent to user ${booking.uid} for slot ${booking.slotId}`);
+                console.log(`[${reminderType}] sent to user ${booking.uid} for slot ${booking.slotId}`);
               }
             }
             
-            // Mark reminder as sent so we don't spam them every 5 mins
+            // Mark this specific reminder as sent
             await db.collection('bookings').doc(doc.id).update({
-              reminderSent: true
+              [`remindersSent.${reminderType}`]: true
             });
             
           } catch (e) {
-            console.error(`Failed to process reminder for booking ${doc.id}:`, e);
+            console.error(`Failed to process ${reminderType} reminder for booking ${doc.id}:`, e);
           }
         })());
       }
