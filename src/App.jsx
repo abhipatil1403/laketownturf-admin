@@ -13,6 +13,7 @@ import BookingsPage from './pages/BookingsPage';
 import SettingsPage from './pages/SettingsPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import AppRedirect from './pages/AppRedirect';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -67,6 +68,10 @@ function App() {
         {/* Public Legal Routes */}
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+
+        {/* Deep Link Redirect Routes */}
+        <Route path="/invite" element={<AppRedirect />} />
+        <Route path="/booking/:bookingId" element={<AppRedirect />} />
         
         {/* Protected Admin Routes */}
         <Route 

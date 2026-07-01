@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.example.laketownturf",
+    "sha256_cert_fingerprints": [
+      "74:39:79:14:25:24:08:8A:58:BD:0D:13:B1:14:2C:1B:EF:D0:2C:7F:C9:C9:BE:D6:55:E6:FC:C5:F6:1E:C0:D5"
+    ]
+  }
+}]
